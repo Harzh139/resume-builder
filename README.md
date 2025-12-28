@@ -29,3 +29,31 @@ Notes
 
 - The bot extracts text from PDFs and DOCX when possible. Install the dependencies listed in `requirements.txt`.
 - Do not commit your actual `.env` file containing secrets.
+
+## Docker deployment
+
+Build the Docker image and run with docker-compose (recommended):
+
+1. Ensure you have a `.env` file in the project root containing `DISCORD_TOKEN` and `N8N_WEBHOOK_URL`.
+
+2. Build and start:
+
+```bash
+docker-compose up -d --build
+```
+
+3. Check logs:
+
+```bash
+docker-compose logs -f
+```
+
+To stop:
+
+```bash
+docker-compose down
+```
+
+Notes:
+- The `Dockerfile` installs the Python dependencies from `requirements.txt` and runs `python src/bot.py`.
+- Do not commit your `.env` file to git.
