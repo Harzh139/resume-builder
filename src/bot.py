@@ -44,7 +44,7 @@ class ResumeOptimizer(commands.Cog):
         """Slash command to optimize resume"""
         
         # Defer the response since processing will take time
-        await interaction.response.defer(ephemeral=True)
+        #await interaction.response.defer(ephemeral=True)
         
         try:
             # Validate that required env vars are present
@@ -80,15 +80,15 @@ class ResumeOptimizer(commands.Cog):
                 return
             
             # Send processing message
-            processing_embed = discord.Embed(
-                title="⏳ Processing your resume...",
-                description="Please wait while we optimize your resume for ATS systems.",
-                color=discord.Color.blue()
-            )
-            processing_embed.add_field(name="📄 Status", value="Resume received\n✉️ Email confirmed\n📝 Job description analyzed", inline=False)
-            processing_embed.set_footer(text="This may take 30-60 seconds")
+            #processing_embed = discord.Embed(
+                #title="⏳ Processing your resume...",
+                #description="Please wait while we optimize your resume for ATS systems.",
+                #color=discord.Color.blue()
+            #)
+            success_embed.add_field(name="📄 Status", value="Resume received\n✉️ Email confirmed\n📝 Job description analyzed", inline=False)
+            success_embed.set_footer(text="This may take 30-60 seconds")
             
-            await interaction.followup.send(embed=processing_embed, ephemeral=True)
+            await interaction.followup.send(embed=success_embed, ephemeral=True)
             
             # Download resume content and extract text depending on file type
             resume_data = await resume.read()
