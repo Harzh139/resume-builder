@@ -42,54 +42,31 @@ class ResumeOptimizer(commands.Cog):
         job_description: str
     ):
         """Slash command to optimize resume"""
-        
-        # Defer the response since processing will take time
-        #await interaction.response.defer(ephemeral=True)
-        
+        # Step 1: acknowledge once (creates an original response we can edit later)
+        await interaction.response.defer(thinking=True)
+
         try:
             # Validate that required env vars are present
             if not DISCORD_TOKEN or not N8N_WEBHOOK_URL:
-                await interaction.followup.send(
-                    "❌ Server not configured. Missing DISCORD_TOKEN or N8N_WEBHOOK_URL.",
-                    ephemeral=True
-                )
+                await interaction.edit_original_response(content="❌ Server not configured. Missing DISCORD_TOKEN or N8N_WEBHOOK_URL.")
                 return
+
             # Validate file type
             allowed_extensions = ['.txt', '.pdf', '.docx']
             if not any(resume.filename.lower().endswith(ext) for ext in allowed_extensions):
-                await interaction.followup.send(
-                    "❌ Invalid file type. Please upload a .txt, .pdf, or .docx file.",
-                    ephemeral=True
-                )
+                await interaction.edit_original_response(content="❌ Invalid file type. Please upload a .txt, .pdf, or .docx file.")
                 return
-            
+
             # Validate email format
             if '@' not in email or '.' not in email.split('@')[1]:
-                await interaction.followup.send(
-                    "❌ Invalid email format. Please provide a valid email address.",
-                    ephemeral=True
-                )
+                await interaction.edit_original_response(content="❌ Invalid email format. Please provide a valid email address.")
                 return
-            
+
             # Validate job description length
             if len(job_description) < 100:
-                await interaction.followup.send(
-                    "❌ Job description is too short. Please provide at least 100 characters.",
-                    ephemeral=True
-                )
+                await interaction.edit_original_response(content="❌ Job description is too short. Please provide at least 100 characters.")
                 return
-            
-            # Send processing message
-            #processing_embed = discord.Embed(
-                #title="⏳ Processing your resume...",
-                #description="Please wait while we optimize your resume for ATS systems.",
-                #color=discord.Color.blue()
-            #)
-            success_embed.add_field(name="📄 Status", value="Resume received\n✉️ Email confirmed\n📝 Job description analyzed", inline=False)
-            success_embed.set_footer(text="This may take 30-60 seconds")
-            
-            await interaction.followup.send(embed=success_embed, ephemeral=True)
-            
+
             # Download resume content and extract text depending on file type
             resume_data = await resume.read()
             resume_text = ""
@@ -178,8 +155,8 @@ class ResumeOptimizer(commands.Cog):
                         )
                         
                         success_embed.set_footer(text="ATS Resume Optimizer")
-                        
-                        await interaction.followup.send(embed=success_embed, ephemeral=True)
+                        # Step 3: edit the original deferred response with the final result
+                        await interaction.edit_original_response(embed=success_embed)
                     else:
                         # Error response
                         error_embed = discord.Embed(
@@ -189,8 +166,7 @@ class ResumeOptimizer(commands.Cog):
                         )
                         error_embed.add_field(name="Status", value=f"{response.status}", inline=False)
                         error_embed.add_field(name="Details", value="Please try again or contact support.", inline=False)
-                        
-                        await interaction.followup.send(embed=error_embed, ephemeral=True)
+                        await interaction.edit_original_response(embed=error_embed)
             
         except Exception as e:
             print(f"❌ Error: {str(e)}")
@@ -204,8 +180,7 @@ class ResumeOptimizer(commands.Cog):
             )
             error_embed.add_field(name="Error", value=str(e)[:1000], inline=False)
             error_embed.add_field(name="Action", value="Please try again or contact support.", inline=False)
-            
-            await interaction.followup.send(embed=error_embed, ephemeral=True)
+            await interaction.edit_original_response(embed=error_embed)
 
     @commands.command(name="resume-help")
     async def resume_help(self, ctx):
