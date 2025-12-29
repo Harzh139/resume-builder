@@ -8,6 +8,8 @@ import aiohttp
 import json
 import base64
 from typing import Optional
+from flask import Flask
+import threading
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
@@ -23,6 +25,21 @@ N8N_WEBHOOK_URL = os.getenv("N8N_WEBHOOK_URL")
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
+
+# Flask web server to keep bot alive
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return "Bot is alive!"
+
+@app.route("/health")
+def health():
+    return {"status": "healthy", "bot": bot.user.name if bot.user else "starting"}
+
+def run_flask():
+    port = int(os.getenv("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
 
 class ResumeOptimizer(commands.Cog):
     def __init__(self, bot):
@@ -186,7 +203,7 @@ class ResumeOptimizer(commands.Cog):
     async def resume_help(self, ctx):
         """Traditional command to show help"""
         embed = discord.Embed(
-            title="📝 ATS Resume Optimizer - Help",
+            title="📋 ATS Resume Optimizer - Help",
             description="Optimize your resume to pass Applicant Tracking Systems!",
             color=discord.Color.blue()
         )
@@ -306,43 +323,24 @@ if __name__ == "__main__":
     import asyncio
     
     # Check if token is set
-    if DISCORD_TOKEN == "YOUR_DISCORD_BOT_TOKEN":
-        print("❌ Error: Please set your DISCORD_TOKEN in the script!")
+    if not DISCORD_TOKEN or DISCORD_TOKEN == "YOUR_DISCORD_BOT_TOKEN":
+        print("❌ Error: Please set your DISCORD_TOKEN in environment variables or .env file!")
         print("Get it from: https://discord.com/developers/applications")
         exit(1)
     
-    if N8N_WEBHOOK_URL == "YOUR_N8N_WEBHOOK_URL":
-        print("❌ Error: Please set your N8N_WEBHOOK_URL in the script!")
+    if not N8N_WEBHOOK_URL or N8N_WEBHOOK_URL == "YOUR_N8N_WEBHOOK_URL":
+        print("❌ Error: Please set your N8N_WEBHOOK_URL in environment variables or .env file!")
         print("Example: https://your-n8n.com/webhook/discord-resume")
         exit(1)
     
     logging.info("🚀 Starting Discord Resume Optimizer Bot...")
-
-    # Validate configuration before starting
-    if not DISCORD_TOKEN:
-        logging.error("DISCORD_TOKEN not set. Put it in the environment or in a .env file.")
-        raise SystemExit(1)
-
-    if not N8N_WEBHOOK_URL:
-        logging.error("N8N_WEBHOOK_URL not set. Put it in the environment or in a .env file.")
-        raise SystemExit(1)
-
     logging.info(f"🔗 Will connect to webhook: {N8N_WEBHOOK_URL}")
     
-    # Setup and run
+    # Start Flask server in background thread BEFORE starting bot
+    print("🌐 Starting Flask web server...")
+    flask_thread = threading.Thread(target=run_flask, daemon=True)
+    flask_thread.start()
+    
+    # Setup and run bot
     asyncio.run(setup())
     bot.run(DISCORD_TOKEN)
-
-from flask import Flask
-import threading
-
-app = Flask(__name__)
-
-@app.route("/")
-def home():
-    return "Bot is alive"
-
-def run_flask():
-    app.run(host="0.0.0.0", port=10000)
-
-threading.Thread(target=run_flask).start()
